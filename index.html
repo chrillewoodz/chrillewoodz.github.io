@@ -1,0 +1,42 @@
+<!DOCTYPE html>
+  <html lang="en">
+  <head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <meta http-equiv="X-UA-Compatible" content="ie=edge">
+    <title>Othello</title>
+    <link rel="stylesheet" href="./styles.css">
+  </head>
+  <body>
+    
+    <div class="wrapper">
+      <div class="panel">
+        <div class="panel-section">
+          <div id="player-one-info" class="m-b-4 player-info">
+            <h1 id="player-one-name" class="title"></h1>
+            <h2 id="player-one-tile-count">
+              <img class="marker" src="assets/othello-marker-black.svg">
+              <span></span>
+            </h2>
+          </div>
+          <div id="player-two-info" class="player-info">
+            <h1 id="player-two-name" class="title"></h1>
+            <h2 id="player-two-tile-count">
+              <img class="marker" src="assets/othello-marker-white.svg">
+              <span></span>
+            </h2>
+          </div>
+        </div>
+        <div class="panel-section">
+          <button id="new-game" class="btn" type="button">New game</button>
+        </div>
+      </div>
+
+      <div id="board"></div>
+    </div>
+
+    <div class="alert-box"></div>
+
+    <script src="./index.js"></script>
+  </body>
+</html>
