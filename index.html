@@ -14,21 +14,39 @@
         <div class="panel-section">
           <div id="player-one-info" class="m-b-4 player-info">
             <h1 id="player-one-name" class="title"></h1>
-            <h2 id="player-one-tile-count">
+            <h2 id="player-one-tile-count" class="m-b-2">
               <img class="marker" src="assets/othello-marker-black.svg">
               <span></span>
             </h2>
+            <h3 class="timer" id="player-one-timer">Time: <span></span></h3>
           </div>
           <div id="player-two-info" class="player-info">
             <h1 id="player-two-name" class="title"></h1>
-            <h2 id="player-two-tile-count">
+            <h2 id="player-two-tile-count" class="m-b-2">
               <img class="marker" src="assets/othello-marker-white.svg">
               <span></span>
             </h2>
+            <h3 class="timer" id="player-two-timer">Time: <span></span></h3>
           </div>
         </div>
         <div class="panel-section">
-          <button id="new-game" class="btn" type="button">New game</button>
+          <h3 class="m-b-2">Time settings</h3>
+          <div class="radio-control">
+            <input id="60000" type="radio" name="time" value="60000" checked>
+            <label for="60000">1 minute</label>
+          </div>
+          <div class="radio-control">
+            <input id="120000" type="radio" name="time" value="120000">
+            <label for="120000">2 minutes</label>
+          </div>
+          <div class="radio-control">
+            <input id="300000" type="radio" name="time" value="300000">
+            <label for="300000">5 minutes</label>
+          </div>
+        </div>
+        <div class="panel-section">
+          <button id="new-game" class="btn btn-main m-b-4" type="button">New game</button>
+          <button id="start-game" class="btn btn-complement" type="button">Start game</button>
         </div>
       </div>
 

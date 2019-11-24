@@ -3,6 +3,8 @@ class View {
   board = document.querySelector('#board');
   title = document.querySelector('#current-player');
   newGame = document.querySelector('#new-game');
+  startGame = document.querySelector('#start-game');
+  timeSettings = document.querySelectorAll('input[name="time"]'); 
 
   activeTiles = [];
 
@@ -11,7 +13,33 @@ class View {
   }
   
   onNewGame(cb) {
-    this.newGame.addEventListener('click', cb);
+
+    this.newGame.addEventListener('click', () => {
+      this.activateStartGameBtn();
+      this.activateTimeSettings();
+      this.setPlayerTimers();
+      cb();
+    });
+  }
+
+  onStartGame(cb) {
+
+    this.startGame.addEventListener('click', () => {
+      this.inactivateStartGameBtn();
+      this.inactivateTimeSettings();
+      cb();
+    });
+  }
+
+  onTimeSettingsChange(cb) {
+    
+    this.timeSettings.forEach((input) => {
+
+      input.addEventListener('change', (e) => {
+        this.setPlayerTimers();
+        cb(e.target.value);
+      });
+    })
   }
 
   render() {
@@ -39,6 +67,35 @@ class View {
     });
 
     this.renderAllTilesAsInactive();
+
+    try {
+      document.querySelector('.winner').classList.remove('winner');
+      document.querySelector('.active').classList.remove('active');
+    }
+    catch(e) {}
+  }
+
+  addTileEventListener(tile, cb) {
+
+    const tileElement = this.getTileElement(tile);
+
+    const clickFn = () => {
+      cb();
+    }
+
+    this.activeTiles.push({tile, listener: clickFn});
+
+    tileElement.addEventListener('click', clickFn);
+  }
+
+  getCurrentTimeSettings() {
+
+    for (let i = 0; i < this.timeSettings.length; i++) {
+      const input = this.timeSettings[i];
+      if (input.checked) {
+        return input.value;
+      }
+    }
   }
 
   getTileQuery(tile) {
@@ -73,19 +130,6 @@ class View {
     this.getTileElement(tile).classList.remove('active');
   }
 
-  addTileEventListener(tile, cb) {
-
-    const tileElement = this.getTileElement(tile);
-
-    const clickFn = () => {
-      cb();
-    }
-
-    this.activeTiles.push({tile, listener: clickFn});
-
-    tileElement.addEventListener('click', clickFn);
-  }
-
   renderAllTilesAsInactive() {
 
     this.activeTiles.forEach(({tile, listener}) => {
@@ -98,6 +142,22 @@ class View {
   renderPlayerNames({one, two}) {
     document.querySelector('#player-one-name').textContent = one.name;
     document.querySelector('#player-two-name').textContent = two.name;
+  }
+
+  activateStartGameBtn() {
+    this.startGame.removeAttribute('disabled');
+  }
+
+  inactivateStartGameBtn() {
+    this.startGame.setAttribute('disabled', '');
+  }
+
+  activateTimeSettings() {
+    this.timeSettings.forEach((input) => input.removeAttribute('disabled'));
+  }
+
+  inactivateTimeSettings() {
+    this.timeSettings.forEach((input) => input.setAttribute('disabled', ''));
   }
 
   showAlert(msg) {
@@ -113,19 +173,52 @@ class View {
 
   updateCurrentPlayer() {
 
-    if (game.state.currentPlayer === game.state.players.one) {
-      document.querySelector('#player-two-info').classList.remove('active');
-      document.querySelector('#player-one-info').classList.add('active');
-    }
-    else {
-      document.querySelector('#player-one-info').classList.remove('active');
-      document.querySelector('#player-two-info').classList.add('active');
+    if (game.state.isGameActive) {
+
+      if (game.state.currentPlayer === game.state.players.one) {
+        document.querySelector('#player-two-info').classList.remove('active');
+        document.querySelector('#player-one-info').classList.add('active');
+      }
+      else {
+        document.querySelector('#player-one-info').classList.remove('active');
+        document.querySelector('#player-two-info').classList.add('active');
+      }
     }
   }
 
   updateTileCount({one, two}) {
     document.querySelector('#player-one-tile-count span').textContent = one.populatedTiles.length;
     document.querySelector('#player-two-tile-count span').textContent = two.populatedTiles.length;
+  }
+
+  updatePlayerTimer(player) {
+
+    const {viewableTime} = player.timer;
+    const timerElement = document.querySelector(`#player-${player.id === 1 ? 'one' : 'two'}-timer`);
+
+    timerElement.querySelector('span').textContent = viewableTime;
+    
+    if (viewableTime < 10) {
+      timerElement.classList.add('low');
+    }
+  }
+
+  showWinner(msg, winner) {
+    this.showAlert(msg);
+    document.querySelector(`#player-${winner.id === 1 ? 'one' : 'two'}-info`).classList.add('winner');
+    document.querySelector(`#player-${winner.id === 1 ? 'two' : 'one'}-info`).classList.remove('active');
+  }
+
+  setPlayerTimers() {
+    
+    const {one, two} = game.state.players;
+    const playerOneTimer = document.querySelector('#player-one-timer');
+    const playerTwoTimer = document.querySelector('#player-two-timer');
+
+    playerOneTimer.classList.remove('low');
+    playerTwoTimer.classList.remove('low');
+    playerOneTimer.querySelector('span').textContent = one.timer.viewableTime;
+    playerTwoTimer.querySelector('span').textContent = two.timer.viewableTime;
   }
 }
 
@@ -359,63 +452,41 @@ class Engine {
 
   flipTiles(tile) {
 
+    function checkAndFlipTile(row, column) {
+
+      const opp = game.state.getOppositePlayer();
+          
+      if (opp.isPlayerTile(row, column)) {
+        opp.flipTile(row, column);
+        return true;
+      }
+    }
+
     if (tile.hasTopOpponentTile() && tile.connectsUp()) {
 
       for (let i = tile.row - 1; i >= 0; i--) {
-
-        const opp = game.state.getOppositePlayer();
-
-        if (opp.isPlayerTile(i, tile.column)) {
-          opp.flipTile(i, tile.column);
-        }
-        else {
-          break;
-        }
+        if (!checkAndFlipTile(i, tile.column)) break;
       }
     }
 
     if (tile.hasRightOpponentTile() && tile.connectsRight()) {
 
       for (let i = tile.column + 1; i < 8; i++) {
-
-        const opp = game.state.getOppositePlayer();
-
-        if (opp.isPlayerTile(tile.row, i)) {
-          opp.flipTile(tile.row, i);
-        }
-        else {
-          break;
-        }
+        if (!checkAndFlipTile(tile.row, i)) break;
       }
     }
 
     if (tile.hasBottomOpponentTile() && tile.connectsBottom()) {
 
       for (let i = tile.row + 1; i < 8; i++) {
-
-        const opp = game.state.getOppositePlayer();
-
-        if (opp.isPlayerTile(i, tile.column)) {
-          opp.flipTile(i, tile.column);
-        }
-        else {
-          break;
-        }
+        if (!checkAndFlipTile(i, tile.column)) break;
       }
     }
 
     if (tile.hasLeftOpponentTile() && tile.connectsLeft()) {
         
       for (let i = tile.column - 1; i >= 0; i--) {
-       
-        const opp = game.state.getOppositePlayer();
-
-        if (opp.isPlayerTile(tile.row, i)) {
-          opp.flipTile(tile.row, i);
-        }
-        else {
-          break;
-        }
+        if (!checkAndFlipTile(tile.row, i)) break;
       }
     }
 
@@ -435,15 +506,7 @@ class Engine {
       const shortestArr = rows.length < columns.length ? rows : columns;
 
       for (let i = 0; i < shortestArr.length; i++) {
-
-        const opp = game.state.getOppositePlayer();
-
-        if (opp.isPlayerTile(rows[i], columns[i])) {
-          opp.flipTile(rows[i], columns[i]);
-        }
-        else {
-          break;
-        }
+        if (!checkAndFlipTile(rows[i], columns[i])) break;
       }
     }
 
@@ -463,15 +526,7 @@ class Engine {
       const shortestArr = rows.length < columns.length ? rows : columns;
 
       for (let i = 0; i < shortestArr.length; i++) {
-
-        const opp = game.state.getOppositePlayer();
-
-        if (opp.isPlayerTile(rows[i], columns[i])) {
-          opp.flipTile(rows[i], columns[i]);
-        }
-        else {
-          break;
-        }
+        if (!checkAndFlipTile(rows[i], columns[i])) break;
       }
     }
 
@@ -491,15 +546,7 @@ class Engine {
       const shortestArr = rows.length <= columns.length ? rows : columns;
 
       for (let i = 0; i < shortestArr.length; i++) {
-
-        const opp = game.state.getOppositePlayer();
-
-        if (opp.isPlayerTile(rows[i], columns[i])) {
-          opp.flipTile(rows[i], columns[i]);
-        }
-        else {
-          break;
-        }
+        if (!checkAndFlipTile(rows[i], columns[i])) break;
       }
     }
 
@@ -519,23 +566,17 @@ class Engine {
       const shortestArr = rows.length < columns.length ? rows : columns;
 
       for (let i = 0; i < shortestArr.length; i++) {
-
-        const opp = game.state.getOppositePlayer();
-
-        if (opp.isPlayerTile(rows[i], columns[i])) {
-          opp.flipTile(rows[i], columns[i]);
-        }
-        else {
-          break;
-        }
+        if (!checkAndFlipTile(rows[i], columns[i])) break;
       }
     }
   }
 
   endTurn(opponentHadNoMoves) {
 
+    game.state.currentPlayer.stopTimer();
     game.view.updateTileCount(game.state.players);
     game.state.nextTurn();
+    game.state.currentPlayer.startTimer();
 
     const hasMovesAvailable = this.checkAvailableTiles();
 
@@ -565,30 +606,24 @@ class Engine {
     game.state.currentPlayer.populatedTiles.forEach((tile) => {
 
       if (tile.hasTopOpponentTile() && !tile.connectsUp()) {
-
         for (let i = tile.row - 1; i >= 0; i--) {
           if (checkTile(i - 1, tile.column)) break;
         }
       }
 
       if (tile.hasRightOpponentTile() && !tile.connectsRight()) {
-
         for (let i = tile.column + 1; i < 8; i++) {
-
           if (checkTile(tile.row, i + 1)) break;
         }
       }
 
       if (tile.hasBottomOpponentTile() && !tile.connectsBottom()) {
-      
         for (let i = tile.row + 1; i < 8; i++) {
-          
           if (checkTile(i + 1, tile.column)) break;
         }
       }
     
       if (tile.hasLeftOpponentTile() && !tile.connectsLeft()) {
-        
         for (let i = tile.column - 1; i >= 0; i--) {
           if (checkTile(tile.row, i - 1)) break;
         }
@@ -679,6 +714,79 @@ class Engine {
   }
 }
 
+class Timer {
+
+  player;
+  startTime;
+  elapsedTime = 0;
+  viewableTime;
+  remainingTime;
+  isPaused = true;
+
+  constructor(player) {
+    this.player = player;
+  }
+
+  setTime(milliseconds) {
+    this.remainingTime = milliseconds;
+    this.setViewableTime();
+  }
+
+  setViewableTime() {
+    const time = ((this.remainingTime - this.elapsedTime) / 1000).toFixed(2);
+    this.viewableTime = parseInt(time) <= 0 ? '0.00' : time;
+  }
+
+  create() {
+
+    this.interval = setInterval(() => {
+
+      if (!this.isPaused && game.state.isGameActive) {
+
+        this.elapsedTime = Date.now() - this.startTime;
+
+        this.setViewableTime();
+
+        game.view.updatePlayerTimer(this.player);
+
+        if (this.viewableTime <= 0) {
+          this.ranOut();
+        }
+      }
+    }, 100);
+  }
+
+  start() {
+
+    this.startTime = Date.now();
+    this.elapsedTime = 0;
+ 
+    this.isPaused = false;
+
+    if (!this.interval) {
+      this.create();
+    }
+  }
+
+  stop() {
+    this.isPaused = true;
+    this.remainingTime = this.remainingTime - this.elapsedTime;
+  }
+
+  reset() {
+    clearInterval(this.interval);
+    this.startTime = undefined;
+    this.elapsedTime = 0;
+    this.viewableTime = undefined;
+    this.interval = undefined;
+    this.isPaused = true;
+  }
+
+  ranOut() {
+    game.endGame(true);
+  }
+}
+
 class Player {
 
   populatedTiles = [];
@@ -687,6 +795,15 @@ class Player {
     this.id = id;
     this.name = name;
     this.color = color;
+    this.timer = new Timer(this);
+  }
+
+  startTimer() {
+    this.timer.start();
+  }
+
+  stopTimer() {
+    this.timer.stop();
   }
 
   flipTile(row, column) {
@@ -719,6 +836,7 @@ class Player {
 
   reset() {
     this.populatedTiles = [];
+    this.timer.reset();
   }
 }
 
@@ -753,14 +871,7 @@ class State {
   }
 
   nextTurn() {
-
-    if (this.currentPlayer === this.players.one) {
-      this.currentPlayer = this.players.two;
-    }
-    else {
-      this.currentPlayer = this.players.one;
-    }
-
+    this.currentPlayer = this.getOppositePlayer();
     game.view.updateCurrentPlayer();
   }
 
@@ -782,22 +893,34 @@ class Game {
     this.view = new View();
 
     this.view.onNewGame(() => {
-      game.resetGame();
-      game.startGame();
+      this.resetGame();
     });
+
+    this.view.onStartGame(() => {
+      this.startGame();
+    })
+
+    this.view.onTimeSettingsChange(this.setPlayerTimers);
+  }
+
+  setPlayerTimers(time = this.view.getCurrentTimeSettings()) {
+    game.state.players.one.timer.setTime(time);
+    game.state.players.two.timer.setTime(time);
+    game.view.setPlayerTimers();
   }
 
   setup() {
 
     const {one, two} = this.state.players;
 
-    one.addTile(game.state.getTile(3, 4), true);
-    one.addTile(game.state.getTile(4, 3), true);
-    two.addTile(game.state.getTile(3, 3), true);
-    two.addTile(game.state.getTile(4, 4), true);
+    one.addTile(this.state.getTile(3, 4), true);
+    one.addTile(this.state.getTile(4, 3), true);
+    two.addTile(this.state.getTile(3, 3), true);
+    two.addTile(this.state.getTile(4, 4), true);
 
     this.view.renderPlayerNames(this.state.players);
     this.view.updateTileCount(this.state.players)
+    this.setPlayerTimers();
   }
 
   resetGame() {
@@ -811,30 +934,35 @@ class Game {
 
   startGame() {
     this.state.start();
+    this.state.currentPlayer.startTimer();
     this.view.updateCurrentPlayer();
-    game.engine.checkAvailableTiles();
+    this.engine.checkAvailableTiles();
   }
 
-  endGame() {
+  endGame(ranOutOfTime) {
 
-    const {one, two} = game.state.players;
+    const {one, two} = this.state.players;
+    const {currentPlayer} = this.state;
+    const opposition = this.state.getOppositePlayer();
     const numOfPlayerOneTiles = one.populatedTiles.length;
     const numOfPlayerTwoTiles = two.populatedTiles.length;
 
-    if (numOfPlayerOneTiles === numOfPlayerTwoTiles) {
+    if (ranOutOfTime) {
+      this.view.showWinner(`${currentPlayer.name} ran out of time. ${opposition.name} wins!`, opposition);
+    }
+    else if (numOfPlayerOneTiles === numOfPlayerTwoTiles) {
       this.view.showAlert('It ends in a draw!');
     }
     else {
-
       const winner = numOfPlayerOneTiles > numOfPlayerTwoTiles ? one : two;
-      this.view.showAlert(`${winner.name} wins!`);
+      this.view.showWinner(`${winner.name} wins!`, winner);
     }
 
-    game.state.stop();
+    this.state.stop();
+    this.view.renderAllTilesAsInactive();
   }
 }
 
 const game = new Game();
 
 game.setup();
-game.startGame();

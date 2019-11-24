@@ -1,5 +1,7 @@
 @import url('https://fonts.googleapis.com/css?family=Ubuntu:400,700&display=swap');
 
+/* DISCLAIMER: This project has only been development and tested in Chrome */
+
 /* For demo purposes only, don't do this in a real world application :) */
 * {
   font-family: Ubuntu;
@@ -8,6 +10,22 @@
 
 .m-b-4 {
   margin-bottom: 20px;
+}
+
+.m-b-2 {
+  margin-bottom: 10px;
+}
+
+.radio-control {
+  margin-bottom: 10px;
+}
+
+input[name="time"]:disabled + label {
+  opacity: 0.5;
+}
+
+.timer.low {
+  color: red;
 }
 
 .wrapper {
@@ -22,6 +40,7 @@
   width: 640px;
   height: 640px;
   align-items: center;
+  user-select: none;
 }
 
 .panel {
@@ -36,10 +55,15 @@
 .player-info {
   padding: 15px;
   border-radius: 5px;
+  background-color: #f4f4f4;
 }
 
 .player-info.active {
-  background-color: #ddd;
+  background-color: #19afe8;
+}
+
+.player-info.winner {
+  background-color: gold;
 }
 
 .marker {
@@ -55,7 +79,6 @@
   align-items: center;
   justify-content: center;
   position: relative;
-  /* float: left; */
   width: 80px;
   height: 80px;
   line-height: 80px;
@@ -66,13 +89,12 @@
 
 .tile.active {
   cursor: pointer;
-  opacity: 0.8;
+  opacity: 0.9;
 }
 
 .tile > img {
   width: 60px;
   height: 60px;
-  /* animation: show 0.5s ease; */
 }
 
 .alert-box {
@@ -103,9 +125,32 @@
   padding: 10px 20px;
   border: 0;
   border-radius: 5px;
-  background-color: burlywood;
-  color: white;
   cursor: pointer;
+  outline: 0;
+  transition: background-color 150ms ease;
+}
+
+.btn:disabled {
+  opacity: 0.5;
+  cursor: default;
+}
+
+.btn-main {
+  background-color: burlywood;
+  color: black;
+}
+
+.btn-main:hover {
+  background-color: #d3a05f;
+}
+
+.btn-complement {
+  background-color: #006633;
+  color: white;
+}
+
+.btn-complement:enabled:hover {
+  background-color: #004d26;
 }
 
 h1, h2, h3, h4, h5, h6 {
